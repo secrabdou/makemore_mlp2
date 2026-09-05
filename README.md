@@ -1,3 +1,4 @@
+
 ### 2. Fast Softmax + Cross-Entropy Gradient (`dlogits`)
 Rather than backpropagating through separate exponentiation, normalization, and log steps, the unified analytic gradient is computed directly in matrix form:
 
