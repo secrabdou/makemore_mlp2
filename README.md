@@ -1,27 +1,20 @@
-# Deep MLP with Custom BatchNorm & Diagnostic Suite
+### 2. Fast Softmax + Cross-Entropy Gradient (`dlogits`)
+Rather than backpropagating through separate exponentiation, normalization, and log steps, the unified analytic gradient is computed directly in matrix form:
 
-A modular, from-scratch PyTorch implementation of a Deep Multi-Layer Perceptron (MLP) built without using `torch.nn`. This project focuses on deep network stability, custom Batch Normalization dynamics, parameter initialization theory, and real-time activation/gradient diagnostics.
+$$\text{dlogits} = \frac{\text{probs} - \text{one\_hot}(Y)}{N}$$
 
----
+### 3. Decoupled BatchNorm Backpropagation
+Leveraging multivariate chain rules and the mathematical identity showing that variance is shift-invariant to the mean ($\frac{\partial \sigma^2}{\partial \mu} = 0$), the backward pass for normalized activations $\hat{x}$ and batch variance $\sigma^2$ is computed directly across batch dimensions:
 
-## Key Features
-
-- **Custom `BatchNorm1d`**: Built from scratch with running mean/variance buffers, momentum scaling, and explicit handling for training vs. evaluation modes.
-- **Custom `Linear` Layer**: Supports bias toggle (`bias=False` when followed by BatchNorm) and custom weight scaling.
-- **Parametric Initialization**: Implementation of Kaiming (He) initialization adapted for `Tanh` activations with theoretical gain scaling.
-- **Model Checkpointing**: Automated parameter snapshot generation using `.clone().detach()` to capture the optimal parameters at peak validation performance.
-- **Diagnostic Suite**:
-  - Activation mean, standard deviation, and saturation tracking for `Tanh` layers.
-  - Layer-wise gradient distribution monitoring.
-  - Update-to-Data ratio tracking ($\log_{10}(\text{step\_update} / \text{data\_scale})$) targeted at the optimal $\sim -3.0$ diagnostic benchmark.
+$$\frac{\partial L}{\partial \sigma^2} = \sum_{i=1}^{N} \frac{\partial L}{\partial \hat{x}_i} \cdot (x_i - \mu) \cdot \left(-\frac{1}{2}(\sigma^2 + \epsilon)^{-3/2}\right)$$
 
 ---
 
 ## Network Architecture & Parameters
 
-- **Input Embedding**: Continuous character/token embeddings mapped to hidden space.
-- **Depth**: 6 Linear + BatchNorm + Tanh layer blocks.
-- **Parameter Count**: ~47.5k trainable parameters.
+* **Input Embedding:** Continuous character/token embeddings mapped to hidden space.
+* **Depth:** 6 Linear + BatchNorm + Tanh layer blocks.
+* **Parameter Count:** ~47.5k trainable parameters.
 
 ```python
 # Layer Stack Definition
